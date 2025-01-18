@@ -32,6 +32,10 @@ public class FilesManager {
         initPathSet();
     }
 
+    public void initFiles() {
+        paths.forEach(this::createDirectory);
+    }
+
     private void initPathSet() {
         List.of(
                 "./default",
@@ -44,10 +48,6 @@ public class FilesManager {
                 "./backup/default",
                 "./backup/built"
         ).forEach(s -> paths.add(toPath(s)));
-    }
-
-    public void initFiles() {
-        paths.forEach(this::createDirectory);
     }
 
     private void createDirectory(Path path) {
