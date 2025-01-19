@@ -2,6 +2,7 @@ package org.rkzyomc.mcserverpackerpro.utils;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.rkzyomc.mcserverpackerpro.configs.Setting;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +22,7 @@ public class FilesManager {
     private final @NotNull Logger logger;
     private final @NotNull Class<?> clazz;
     private final @NotNull Path dataFolder;
+    private static ConfigManager<Setting> settingManager;
 
     public FilesManager(@NotNull Logger logger, @NotNull Class<?> clazz) {
         this.logger = logger;
@@ -37,10 +39,13 @@ public class FilesManager {
     }
 
     /**
-     * 初始化 paths 的所有文件夹
+     * 初始化 paths 的所有文件夹 <br>
+     * 加载setting.yml
      */
     public void initFiles() {
         paths.forEach(this::createDirectory);
+        settingManager = ConfigManager.create(getDataPath(), "setting.yml", Setting.class);
+        settingManager.reloadConfig();
     }
 
     /**
@@ -57,6 +62,9 @@ public class FilesManager {
         throw new RuntimeException();
     }
 
+    /**
+     * 压缩 default 和 built
+     */
     public void zipFiles() {
         List.of(
                 "./default",
@@ -73,6 +81,24 @@ public class FilesManager {
                 );
             }
         });
+    }
+
+    /**
+     * 压缩文件夹 存储到 ./backup/{文件夹名字}
+     * @param path 相对路径 以./开头
+     */
+    public void backupFile(String path) {
+        String[] split = path.split("/");
+        String substring = split[split.length-1];
+        File file = new File(getPath(path).toUri());
+        if (!isEmptyFolder(file)) {
+            compressFolder(
+                    file,
+                    getPath("backup").resolve(
+                            substring
+                    ).resolve(substring + "-" + getTime() + ".zip").toFile()
+            );
+        }
     }
 
     /**
@@ -142,5 +168,9 @@ public class FilesManager {
 
     public @NotNull Set<Path> getPaths() {
         return paths;
+    }
+
+    public ConfigManager<Setting> getSetting() {
+        return settingManager;
     }
 }
