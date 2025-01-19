@@ -28,7 +28,6 @@ public class Main {
         logger.info("程序退出");
     }
 
-
     public static Logger getLogger() {
         return logger;
     }
