@@ -16,8 +16,8 @@
         <!--*********************文件日志***********************-->
         <!--all级别日志-->
         <RollingFile name="allFileAppender"
-                     fileName="${LOG_HOME}/all.log"
-                     filePattern="${LOG_HOME}/$${date:yyyy-MM}/all-%d{yyyy-MM-dd}-%i.log.gz">
+                     fileName="logs/all.log"
+                     filePattern="logs/$${date:yyyy-MM}/all-%d{yyyy-MM-dd}-%i.log.gz">
             <!--设置日志格式-->
             <PatternLayout>
                 <pattern>%d %p %C{} [%t] %m%n</pattern>

@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
@@ -33,3 +35,25 @@ test {
     useJUnitPlatform()
 }
 
+def currentDate = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date())
+
+tasks.register('createRunFile') {
+    doLast {
+        def file = file("${projectDir}/build/libs/run.sh") // 目标文件
+        file.text = """#!/bin/bash
+java -cp ${project.name}-${project.version}-${currentDate}-all.jar org.rkzyomc.mcserverpackerpro.Main
+"""
+        file.setExecutable(true) // 设置可执行权限
+    }
+}
+
+tasks.shadowJar {
+    archiveBaseName.set('MCServerPackerPro')  // 基础名称
+    archiveVersion.set("${project.version}-${currentDate}")  // 动态日期作为版本号
+    archiveClassifier.set('all')  // 设置为 all.jar 格式
+}
+
+tasks.build {
+    dependsOn tasks.shadowJar
+    finalizedBy 'createRunFile'
+}
