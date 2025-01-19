@@ -3,6 +3,7 @@ package org.rkzyomc.mcserverpackerpro.utils;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -11,6 +12,9 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static org.rkzyomc.mcserverpackerpro.utils.Tool.compressFolder;
+import static org.rkzyomc.mcserverpackerpro.utils.Tool.getTime;
 
 public class FilesManager {
     private final @NotNull Set<Path> paths = new HashSet<>();
@@ -32,8 +36,59 @@ public class FilesManager {
         initPathSet();
     }
 
+    /**
+     * 初始化 paths 的所有文件夹
+     */
     public void initFiles() {
         paths.forEach(this::createDirectory);
+    }
+
+    /**
+     * 获取文件path
+     * @param key 相对位置
+     * @return 如果不存在抛出异常
+     */
+    public @NotNull Path getPath(String key) {
+        Path path = dataFolder.resolve(key);
+        if (path.toFile().exists()) {
+            return path;
+        }
+        logger.error("代码错误 无法获取path[{}]", path);
+        throw new RuntimeException();
+    }
+
+    public void zipFiles() {
+        List.of(
+                "./default",
+                "./built"
+        ).forEach(s -> {
+            String substring = s.substring(2);
+            File file = new File(getPath(s).toUri());
+            if (!isEmptyFolder(file)) {
+                compressFolder(
+                        file,
+                        getPath("backup").resolve(
+                                substring
+                        ).resolve(substring + "-" + getTime() + ".zip").toFile()
+                );
+            }
+        });
+    }
+
+    /**
+     * 判断文件夹内是否有文件
+     */
+    private boolean isEmptyFolder(File file) {
+        File[] files = file.listFiles();
+        if (files == null || files.length == 0) return true;
+        for (File listFile : files) {
+            if (listFile.isDirectory()) {
+                return isEmptyFolder(listFile);
+            } else {
+                return false;
+            }
+        }
+        return false;
     }
 
     private void initPathSet() {
@@ -61,6 +116,10 @@ public class FilesManager {
         }
     }
 
+    /**
+     * 通过相对路径获取获取绝对路径
+     * @param s 相对位置
+     */
     private Path toPath(String s) {
         if (s.startsWith("./")) {
 

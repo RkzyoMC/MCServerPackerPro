@@ -12,6 +12,7 @@ public class Main {
         logger.info("开始运行");
 
         filesManager.initFiles();
+        filesManager.zipFiles();
 
         logger.info("程序退出");
     }
