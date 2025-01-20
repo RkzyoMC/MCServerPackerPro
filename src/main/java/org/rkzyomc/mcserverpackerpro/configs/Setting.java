@@ -17,12 +17,12 @@ public interface Setting {
     @SubSection
     interface Backup {
         @ConfDefault.DefaultBoolean(true)
-        @ConfComments("\n# 每次启动备份 default 文件夹")
+        @ConfComments("# 每次启动备份 default 文件夹")
         @AnnotationBasedSorter.Order(10)
         boolean compressDefault();
 
         @ConfDefault.DefaultBoolean(false)
-        @ConfComments("\n# 每次启动备份 built 文件夹")
+        @ConfComments("# 每次启动备份 built 文件夹")
         @AnnotationBasedSorter.Order(20)
         boolean compressBuilt();
     }
