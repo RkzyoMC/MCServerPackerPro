@@ -20,13 +20,11 @@ import static org.rkzyomc.mcserverpackerpro.utils.Tool.getTime;
 public class FilesManager {
     private final @NotNull Set<Path> paths = new HashSet<>();
     private final @NotNull Logger logger;
-    private final @NotNull Class<?> clazz;
     private final @NotNull Path dataFolder;
     private static ConfigManager<Setting> settingManager;
 
     public FilesManager(@NotNull Logger logger, @NotNull Class<?> clazz) {
         this.logger = logger;
-        this.clazz = clazz;
         try {
             URL url = clazz.getProtectionDomain().getCodeSource().getLocation();
             Path jarPath = Paths.get(url.toURI()).getParent();
@@ -60,27 +58,6 @@ public class FilesManager {
         }
         logger.error("代码错误 无法获取path[{}]", path);
         throw new RuntimeException();
-    }
-
-    /**
-     * 压缩 default 和 built
-     */
-    public void zipFiles() {
-        List.of(
-                "./default",
-                "./built"
-        ).forEach(s -> {
-            String substring = s.substring(2);
-            File file = new File(getPath(s).toUri());
-            if (!isEmptyFolder(file)) {
-                compressFolder(
-                        file,
-                        getPath("backup").resolve(
-                                substring
-                        ).resolve(substring + "-" + getTime() + ".zip").toFile()
-                );
-            }
-        });
     }
 
     /**
@@ -164,10 +141,6 @@ public class FilesManager {
 
     private @NotNull Path getDataPath() {
         return dataFolder;
-    }
-
-    public @NotNull Set<Path> getPaths() {
-        return paths;
     }
 
     public ConfigManager<Setting> getSetting() {
