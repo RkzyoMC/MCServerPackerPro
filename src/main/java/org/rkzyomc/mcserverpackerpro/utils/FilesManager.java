@@ -1,5 +1,7 @@
 package org.rkzyomc.mcserverpackerpro.utils;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.rkzyomc.mcserverpackerpro.configs.Setting;
@@ -10,15 +12,27 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import static org.rkzyomc.mcserverpackerpro.utils.Tool.compressFolder;
-import static org.rkzyomc.mcserverpackerpro.utils.Tool.getTime;
+import java.util.*;
 
 public class FilesManager {
+    private static final List<String> DEFAULT_PATHS = List.of(
+            "./default",
+            "./default/files",
+            "./default/servers",
+            "./built",
+            "./built/files",
+            "./built/servers",
+            "./backup",
+            "./backup/default",
+            "./backup/built"
+    );
+
+    private static final List<String> RESOURCE_FILES = List.of(
+            "/placeholder.json", "./placeholder.json"
+    );
+
     private final @NotNull Set<Path> paths = new HashSet<>();
+    private final @NotNull Map<String, Path> files = new HashMap<>();
     private final @NotNull Logger logger;
     private final @NotNull Path dataFolder;
     private static ConfigManager<Setting> settingManager;
@@ -27,123 +41,98 @@ public class FilesManager {
         this.logger = logger;
         try {
             URL url = clazz.getProtectionDomain().getCodeSource().getLocation();
-            Path jarPath = Paths.get(url.toURI()).getParent();
-            this.dataFolder = jarPath != null ? jarPath : Paths.get("");
+            this.dataFolder = Paths.get(url.toURI()).getParent();
         } catch (Exception e) {
-            logger.error("Error retrieving data folder.", e);
-            throw new RuntimeException(e);
+            logger.error("Failed to initialize data folder.", e);
+            throw new IllegalStateException("Unable to determine data folder.", e);
         }
-        initPathSet();
+        initPaths();
+        initFiles();
     }
 
-    /**
-     * 初始化 paths 的所有文件夹 <br>
-     * 加载setting.yml
-     */
-    public void initFiles() {
+    public void initAll() {
         paths.forEach(this::createDirectory);
-        settingManager = ConfigManager.create(getDataPath(), "setting.yml", Setting.class);
+        files.forEach((resourcePath, extractPath) ->
+                Tool.extractResourceFile(resourcePath, extractPath, false)
+        );
+        settingManager = ConfigManager.create(getDataFolder(), "setting.yml", Setting.class);
         settingManager.reloadConfig();
     }
 
-    /**
-     * 获取文件path
-     * @param key 相对位置
-     * @return 如果不存在抛出异常
-     */
-    public @NotNull Path getPath(String key) {
+    public @NotNull Path getPath(@NotNull String key) {
         Path path = dataFolder.resolve(key);
-        if (path.toFile().exists()) {
+        if (Files.exists(path)) {
             return path;
         }
-        logger.error("代码错误 无法获取path[{}]", path);
-        throw new RuntimeException();
+        logger.error("Path [{}] does not exist.", path);
+        throw new NoSuchElementException("Path not found: " + key);
     }
 
-    /**
-     * 压缩文件夹 存储到 ./backup/{文件夹名字}
-     * @param path 相对路径 以./开头
-     */
-    public void backupFile(String path) {
-        String[] split = path.split("/");
-        String substring = split[split.length-1];
-        File file = new File(getPath(path).toUri());
+    public void backupFile(@NotNull String relativePath) {
+        Path targetPath = getPath(relativePath);
+        File file = targetPath.toFile();
+
         if (!isEmptyFolder(file)) {
-            compressFolder(
-                    file,
-                    getPath("backup").resolve(
-                            substring
-                    ).resolve(substring + "-" + getTime() + ".zip").toFile()
-            );
+            String backupName = targetPath.getFileName().toString() + "-" + Tool.getTime() + ".zip";
+            Path backupPath = getPath("backup").resolve(backupName);
+            Tool.compressFolder(file, backupPath.toFile());
         }
     }
 
-    /**
-     * 判断文件夹内是否有文件
-     */
-    private boolean isEmptyFolder(File file) {
+    public JsonObject getPlaceholderJson() {
+        return JsonParser.parseString(
+                Objects.requireNonNull(Tool.readFileToString(getPath("./placeholder.json")))
+        ).getAsJsonObject();
+    }
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean isEmptyFolder(@NotNull File file) {
         File[] files = file.listFiles();
-        if (files == null || files.length == 0) return true;
-        for (File listFile : files) {
-            if (listFile.isDirectory()) {
-                return isEmptyFolder(listFile);
+        if (files == null) return true;
+        for (File f : files) {
+            if (f.isDirectory()) {
+                if (!isEmptyFolder(f)) return false;
             } else {
                 return false;
             }
         }
-        return false;
+        return true;
     }
 
-    private void initPathSet() {
-        List.of(
-                "./default",
-                "./default/files",
-                "./default/servers",
-                "./built",
-                "./built/files",
-                "./built/servers",
-                "./backup",
-                "./backup/default",
-                "./backup/built"
-        ).forEach(s -> paths.add(toPath(s)));
+    private void initPaths() {
+        DEFAULT_PATHS.forEach(path -> paths.add(toAbsolutePath(path)));
     }
 
-    private void createDirectory(Path path) {
-        if (path.toFile().exists()) return;
+    private void initFiles() {
+        for (int i = 0; i < RESOURCE_FILES.size(); i += 2) {
+            files.put(RESOURCE_FILES.get(i), toAbsolutePath(RESOURCE_FILES.get(i + 1)));
+        }
+    }
+
+    private void createDirectory(@NotNull Path path) {
+        if (Files.exists(path)) return;
         try {
             Files.createDirectories(path);
-            logger.info("Directory created: [{}]", path);
+            logger.info("Created directory: [{}]", path);
         } catch (IOException e) {
             logger.error("Failed to create directory: [{}]", path, e);
-            throw new RuntimeException(e);
+            throw new IllegalStateException("Unable to create directory: " + path, e);
         }
     }
 
-    /**
-     * 通过相对路径获取获取绝对路径
-     * @param s 相对位置
-     */
-    private Path toPath(String s) {
-        if (s.startsWith("./")) {
-
-            String[] split = s.substring(2).split("/");
-            StringBuilder builder = new StringBuilder();
-            for (String string : split) {
-                builder.append(string).append("/");
-            }
-
-            return dataFolder.resolve(builder.toString());
-        } else {
-            logger.error("not support the string [{}]", s);
-            throw new RuntimeException();
+    private @NotNull Path toAbsolutePath(@NotNull String relativePath) {
+        if (!relativePath.startsWith("./")) {
+            logger.error("Unsupported path format: [{}]", relativePath);
+            throw new IllegalArgumentException("Path must start with './': " + relativePath);
         }
+        return dataFolder.resolve(relativePath.substring(2).replace("/", File.separator));
     }
 
-    private @NotNull Path getDataPath() {
+    private @NotNull Path getDataFolder() {
         return dataFolder;
     }
 
-    public ConfigManager<Setting> getSetting() {
+    public ConfigManager<Setting> getSettingManager() {
         return settingManager;
     }
 }

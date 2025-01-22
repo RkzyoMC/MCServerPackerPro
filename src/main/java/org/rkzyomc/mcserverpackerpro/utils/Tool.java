@@ -1,5 +1,7 @@
 package org.rkzyomc.mcserverpackerpro.utils;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,44 +21,33 @@ public class Tool {
     public static final @NotNull Class<Main> clazz = Main.class;
 
     /**
-     * 读取resource内文件为String
+     * 释放资源文件到指定路径。
      *
-     * @param path 位置
-     * @return 未找到返回null
+     * @param resourcePath 资源路径
+     * @param extractPath  输出路径
+     * @param createEmpty  如果资源不存在是否创建空文件
      */
-    public static @Nullable String readResourceFile(@NotNull Path path) {
-        try (InputStream stream = clazz.getResourceAsStream(path.toString())) {
-            if (stream == null) {
-                logger.error("Resource file not found {}", path);
-                return null;
-            }
-
-            InputStreamReader isr = new InputStreamReader(stream);
-            BufferedReader br = new BufferedReader(isr);
-            StringBuilder out = new StringBuilder();
-            String output;
-            while ((output = br.readLine()) != null) {
-                out.append(output);
-            }
-
-            return out.toString();
-        } catch (IOException e) {
-            logger.error("Error extracting resource file: {}", path);
-            throw new RuntimeException(e);
+    public static void extractResourceFile(@NotNull String resourcePath, @NotNull Path extractPath, boolean createEmpty) {
+        if (Files.exists(extractPath)) {
+            logger.info("File already exists: {}", resourcePath);
+            return;
         }
-    }
 
-    /**
-     * 释放resource文件到指定文件夹
-     */
-    public static void extractResourceFile(@NotNull Path resourcePath, @NotNull Path extractPath) {
-        String input = readResourceFile(resourcePath);
-        if (input == null) return;
-        Path targetPath = extractPath.resolve(resourcePath.toString().substring(1));
-
-        try {
-            Files.copy(Path.of(input), targetPath);
+        try (InputStream inputStream = clazz.getResourceAsStream(resourcePath)) {
+            if (inputStream == null) {
+                if (createEmpty) {
+                    Files.createFile(extractPath);
+                    logger.info("Created empty file at: {}", extractPath);
+                } else {
+                    logger.error("Resource file not found: {}", resourcePath);
+                    throw new FileNotFoundException("Resource file not found: " + resourcePath);
+                }
+            } else {
+                Files.copy(inputStream, extractPath);
+                logger.info("Extracted resource file: {}", resourcePath);
+            }
         } catch (IOException e) {
+            logger.error("Error extracting resource file: {}", resourcePath, e);
             throw new RuntimeException(e);
         }
     }
@@ -111,5 +102,57 @@ public class Tool {
         // 格式化时间：yyyy-MM-dd HH:mm:ss
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
         return sdf.format(now);
+    }
+
+    /**
+     * Retrieves a value from the JSON object using a dot-separated path.
+     *
+     * @param path Dot-separated path (e.g., "key.subkey")
+     * @return The value corresponding to the path
+     */
+    public static @NotNull JsonElement getValueByPath(@NotNull JsonObject current, @NotNull String path) {
+        String[] keys = (path).split("\\.");
+
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            JsonElement element = current.get(key);
+
+            if (element == null) {
+                logger.error("Failed to retrieve path [{}]: not found in current.", path);
+                throw new IllegalArgumentException("Invalid path: " + path);
+            }
+
+            if (i == keys.length - 1) { // Last key in path
+                return element;
+            }
+
+            if (!element.isJsonObject()) {
+                logger.error("Invalid structure for path [{}]: expected an object at key [{}]", path, key);
+                throw new IllegalArgumentException("Invalid structure: " + path);
+            }
+
+            current = element.getAsJsonObject();
+        }
+        logger.error("getValueByPath() error [{}, {}]", current, path);
+        throw new RuntimeException();
+    }
+
+    /**
+     * 读取文件内容为 String
+     *
+     * @param filePath 文件路径
+     * @return 文件内容
+     */
+    public static @Nullable String readFileToString(@NotNull Path filePath) {
+        if (!Files.exists(filePath)) {
+            logger.error("Failed to get file {}", filePath);
+            return null;
+        }
+        try {
+            return Files.readString(filePath);
+        } catch (IOException e) {
+            logger.error("Failed to read file {}", filePath);
+            throw new RuntimeException(e);
+        }
     }
 }
