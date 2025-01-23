@@ -6,6 +6,8 @@ import space.arim.dazzleconf.annote.ConfHeader;
 import space.arim.dazzleconf.annote.SubSection;
 import space.arim.dazzleconf.sorter.AnnotationBasedSorter;
 
+import java.util.List;
+
 @SuppressWarnings("unused")
 @ConfHeader("# 配置文件 MCServerPackerPro Config ver 1.0.0 by xiantiao")
 public interface Setting {
@@ -27,4 +29,15 @@ public interface Setting {
         boolean compressBuilt();
     }
 
+    @ConfComments("\n# 工作设置")
+    @AnnotationBasedSorter.Order(20)
+    Work work();
+
+    @SubSection
+    interface Work {
+        @ConfDefault.DefaultStrings({".yml", ".txt"})
+        @ConfComments("# 运行时要处理的文件后缀")
+        @AnnotationBasedSorter.Order(10)
+        List<String> suffixes();
+    }
 }

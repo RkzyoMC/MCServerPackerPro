@@ -5,8 +5,9 @@
 
 ## TODO:
 
+- [ ] 提取FilesManager方法到FileX
 - [x] 备份文件
-- [ ] default 变量
+- [x] default 变量
 - [ ] 将default压缩为最小单元  
 - [ ] 直接 下载/更新 核心  
 - [ ] 直接 下载/更新 插件  

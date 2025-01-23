@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.rkzyomc.mcserverpackerpro.configs.Setting;
+import org.rkzyomc.mcserverpackerpro.interfaces.FileX;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,6 +67,12 @@ public class FilesManager {
         }
         logger.error("Path [{}] does not exist.", path);
         throw new NoSuchElementException("Path not found: " + key);
+    }
+
+    public @NotNull FileX getFileX(@NotNull String key) {
+        return FileManager.getInstance(
+                new File(getPath(key).toUri())
+        );
     }
 
     public void backupFile(@NotNull String relativePath) {

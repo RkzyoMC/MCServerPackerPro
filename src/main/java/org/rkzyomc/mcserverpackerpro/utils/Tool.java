@@ -10,15 +10,18 @@ import org.rkzyomc.mcserverpackerpro.Main;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import static org.rkzyomc.mcserverpackerpro.Main.clazz;
 
 public class Tool {
 
     private static final @NotNull Logger logger = Main.getLogger();
-    public static final @NotNull Class<Main> clazz = Main.class;
 
     /**
      * 释放资源文件到指定路径。
@@ -153,6 +156,94 @@ public class Tool {
         } catch (IOException e) {
             logger.error("Failed to read file {}", filePath);
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 将文本内容全覆盖写入指定文件
+     *
+     * @param filePath 文件路径
+     * @param content  要写入的内容
+     * @throws IOException 如果写入失败
+     */
+    public static void writeFileOverwrite(Path filePath, String content) {
+        // 使用 try-with-resources 自动关闭资源
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath.toFile()))) {
+            writer.write(content);
+        } catch (IOException e) {
+            logger.error("Fail to write file {}", filePath);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 检查文件夹名称是否以指定的后缀结尾
+     *
+     * @param folderName 文件夹名称
+     * @param suffixes   后缀列表
+     * @return 如果名称以任意一个后缀结尾，则返回 true
+     */
+    public static boolean matchesSuffix(String folderName, List<String> suffixes) {
+        if (suffixes == null || suffixes.isEmpty()) {
+            return true; // 如果没有指定后缀，默认匹配所有
+        }
+
+        for (String suffix : suffixes) {
+            if (folderName.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static @NotNull String getRunningPathString() {
+        return  clazz.getProtectionDomain().getCodeSource().getLocation().getPath();
+    }
+
+    /**
+     * 递归复制文件夹和文件
+     *
+     * @param source      源文件夹或文件路径
+     * @param destination 目标文件夹路径
+     */
+    public static void copyFile(Path source, Path destination, StandardCopyOption option) {
+        File sourceFile = source.toFile();
+        File destinationFile = destination.toFile();
+
+        // 如果源是文件，直接复制文件
+        if (sourceFile.isFile()) {
+            try {
+                Files.copy(source, destination, option);
+            } catch (IOException e) {
+                logger.error("Failed to copy: {} -> {}", source, destination);
+                logger.trace("Failed to copy: {} -> {}", source, destination);
+                return;
+            }
+            logger.info("copied {} to {}", source, destination);
+            return;
+        }
+
+        // 如果源是文件夹，创建目标文件夹
+        if (!destinationFile.exists() && !destinationFile.mkdirs()) {
+            try {
+                throw new IOException();
+            } catch (IOException e) {
+                logger.error("Failed to create directory: {}", destinationFile);
+                logger.trace("Failed to create directory: {}", destinationFile);
+                return;
+            }
+        }
+
+        // 遍历源文件夹中的所有文件和子文件夹
+        File[] files = sourceFile.listFiles();
+        if (files == null) return; // 空文件夹
+
+        for (File file : files) {
+            Path subSource = file.toPath();
+            Path subDestination = destination.resolve(file.getName());
+
+            // 递归处理子文件或文件夹
+            copyFile(subSource, subDestination, option);
         }
     }
 }
