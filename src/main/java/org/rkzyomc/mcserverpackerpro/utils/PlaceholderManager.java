@@ -6,16 +6,21 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.rkzyomc.mcserverpackerpro.interfaces.Placeholder;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PlaceholderManager implements Placeholder {
-    private final @NotNull Logger logger;
     private final @NotNull JsonObject json;
+    private final @NotNull Map<String, Supplier<String>> placeholderMap = new HashMap<>(); // 特殊变量
 
     private PlaceholderManager(@NotNull Logger logger, @NotNull JsonObject json) {
-        this.logger = logger;
         this.json = updateConfig(json);
+        placeholderMap.put("\\$\\(random\\.uuid\\)", () -> UUID.randomUUID().toString());
+        placeholderMap.forEach((s, stringSupplier) -> logger.info("placeholderMap [{}]", s));
     }
 
     public static Placeholder getInstance(@NotNull Logger logger, @NotNull JsonObject json) {
@@ -24,6 +29,19 @@ public class PlaceholderManager implements Placeholder {
 
     @Override
     public @NotNull String parse(@NotNull String text) {
+        // 特殊变量替换
+        for (String string : placeholderMap.keySet()) {
+            Pattern pattern = Pattern.compile(string);
+            Matcher matcher = pattern.matcher(text);
+            while (matcher.find()) {
+                String get = placeholderMap.get(string).get();
+                text = text.replaceFirst(
+                        string,
+                        get
+                );
+            }
+        }
+
         Pattern pattern = Pattern.compile("\\$\\(mcp\\.([^)]+)\\)");
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
