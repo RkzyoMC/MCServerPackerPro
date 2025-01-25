@@ -45,14 +45,30 @@ public class PlaceholderManager implements Placeholder {
         Pattern pattern = Pattern.compile("\\$\\(mcp\\.([^)]+)\\)");
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
-            String group = matcher.group(1);
-            text = text.replaceAll(
-                    "\\$\\(mcp\\."+group+"\\)",
-                    Tool.getValueByPath(
-                            json,
-                            group
-                    ).getAsString()
-            );
+            String group0 = matcher.group(0);
+            String group1 = matcher.group(1);
+            int i = matcher.start() + group0.length();
+            String string = Tool.charAt(text, i, i + 4);
+
+            if (string.equals("(obj)")) {
+                text = text.replaceAll(
+                        "\"\\$\\(mcp\\."+group1+"\\)\\(obj\\)\"",
+                        Tool.getValueByPath(
+                                json,
+                                group1
+                        ).getAsString()
+                );
+            } else {
+                text = text.replaceAll(
+                        "\\$\\(mcp\\."+group1+"\\)",
+                        Tool.getValueByPath(
+                                json,
+                                group1
+                        ).getAsString()
+                );
+            }
+
+            matcher = pattern.matcher(text);
         }
         return text;
     }
@@ -61,15 +77,33 @@ public class PlaceholderManager implements Placeholder {
         Pattern pattern = Pattern.compile("\\$\\(mcp\\.([^)]+)\\)");
         Matcher matcher = pattern.matcher(json.toString());
         if (matcher.find()) {
-            String group = matcher.group(1);
-            json = JsonParser.parseString(
-                    json.toString().replaceAll(
-                            "\\$\\(mcp\\."+group+"\\)",
+            String jsonString = json.toString();
+            {
+                String group0 = matcher.group(0);
+                String group1 = matcher.group(1);
+                int i = matcher.start() + group0.length();
+                String string = Tool.charAt(jsonString, i, i + 4);
+
+                if (string.equals("(obj)")) {
+                    jsonString = jsonString.replaceFirst(
+                            "\"\\$\\(mcp\\."+group1+"\\)\\(obj\\)\"",
                             Tool.getValueByPath(
                                     json,
-                                    group
+                                    group1
                             ).getAsString()
-                    )
+                    );
+                } else {
+                    jsonString = jsonString.replaceFirst(
+                            "\\$\\(mcp\\."+group1+"\\)",
+                            Tool.getValueByPath(
+                                    json,
+                                    group1
+                            ).getAsString()
+                    );
+                }
+            }
+            json = JsonParser.parseString(
+                    jsonString
             ).getAsJsonObject();
             return updateConfig(json);
         } else {

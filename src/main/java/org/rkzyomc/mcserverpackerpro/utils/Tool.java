@@ -246,4 +246,26 @@ public class Tool {
             copyFile(subSource, subDestination, option);
         }
     }
+
+
+    /**
+     * 获取文本一段范围内的字符
+     * @param text 文本
+     * @param i1 起始范围
+     * @param i2 终止范围
+     * @throws IndexOutOfBoundsException 起始范围 > 终止范围
+     */
+    public static String charAt(String text, int i1, int i2) {
+        if (i1 > i2) throw new IllegalArgumentException();
+        StringBuilder builder = new StringBuilder();
+        for (int i = i1; i <= i2; i++) {
+            try {
+                char c = text.charAt(i);
+                builder.append(c);
+            } catch (IndexOutOfBoundsException e) {
+                return builder.toString();
+            }
+        }
+        return builder.toString();
+    }
 }
