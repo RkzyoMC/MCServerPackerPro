@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.rkzyomc.mcserverpackerpro.configs.Registry;
 import org.rkzyomc.mcserverpackerpro.configs.Setting;
 import org.rkzyomc.mcserverpackerpro.interfaces.FileX;
 
@@ -37,6 +38,7 @@ public class FilesManager {
     private final @NotNull Logger logger;
     private final @NotNull Path dataFolder;
     private static ConfigManager<Setting> settingManager;
+    private static ConfigManager<Registry> registryManager;
 
     public FilesManager(@NotNull Logger logger, @NotNull Class<?> clazz) {
         this.logger = logger;
@@ -58,6 +60,8 @@ public class FilesManager {
         );
         settingManager = ConfigManager.create(getDataFolder(), "setting.yml", Setting.class);
         settingManager.reloadConfig();
+        registryManager = ConfigManager.create(getDataFolder(), "registry.yml", Registry.class);
+        registryManager.reloadConfig();
     }
 
     public @NotNull Path getPath(@NotNull String key) {
@@ -141,5 +145,10 @@ public class FilesManager {
 
     public ConfigManager<Setting> getSettingManager() {
         return settingManager;
+    }
+
+    @SuppressWarnings("unused")
+    public static ConfigManager<Registry> getRegistryManager() {
+        return registryManager;
     }
 }
