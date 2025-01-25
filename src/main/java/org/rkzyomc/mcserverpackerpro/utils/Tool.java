@@ -164,7 +164,7 @@ public class Tool {
      *
      * @param filePath 文件路径
      * @param content  要写入的内容
-     * @throws IOException 如果写入失败
+     * @throws RuntimeException 如果写入失败
      */
     public static void writeFileOverwrite(Path filePath, String content) {
         // 使用 try-with-resources 自动关闭资源
