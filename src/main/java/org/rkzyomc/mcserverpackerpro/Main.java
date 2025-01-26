@@ -4,16 +4,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.rkzyomc.mcserverpackerpro.configs.Setting;
-import org.rkzyomc.mcserverpackerpro.interfaces.FileX;
 import org.rkzyomc.mcserverpackerpro.interfaces.Placeholder;
-import org.rkzyomc.mcserverpackerpro.utils.FileManager;
 import org.rkzyomc.mcserverpackerpro.utils.FilesManager;
 import org.rkzyomc.mcserverpackerpro.utils.PlaceholderManager;
-import org.rkzyomc.mcserverpackerpro.utils.Tool;
 
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
 
 import static org.rkzyomc.mcserverpackerpro.utils.Tool.matchesSuffix;
 
@@ -62,6 +58,7 @@ public class Main {
         filesManager.getFileX("./built").allListFiles(false).forEach(fileX -> {
             Path path = fileX.toPath();
             if (!matchesSuffix(path.toString(), setting.work().suffixes())) return;
+            logger.info("parsing [{}]", fileX);
             String parse = ph.parse(
                     fileX.read()
             );
