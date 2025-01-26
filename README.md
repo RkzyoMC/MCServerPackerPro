@@ -5,7 +5,7 @@
 
 ## TODO:
 
-- [ ] 提取FilesManager方法到FileX
+- [x] 提取FilesManager方法到FileX
 - [x] 备份文件
 - [x] default 变量
 - [ ] 将default压缩为最小单元  
