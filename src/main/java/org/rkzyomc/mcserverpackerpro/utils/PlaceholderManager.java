@@ -18,9 +18,9 @@ public class PlaceholderManager implements Placeholder {
     private final @NotNull Map<String, Supplier<String>> placeholderMap = new HashMap<>(); // 特殊变量
 
     private PlaceholderManager(@NotNull Logger logger, @NotNull JsonObject json) {
-        this.json = updateConfig(json);
         placeholderMap.put("\\$\\(random\\.uuid\\)", () -> UUID.randomUUID().toString());
         placeholderMap.forEach((s, stringSupplier) -> logger.info("placeholderMap [{}]", s));
+        this.json = updateConfig(json);
     }
 
     public static Placeholder getInstance(@NotNull Logger logger, @NotNull JsonObject json) {
@@ -30,17 +30,7 @@ public class PlaceholderManager implements Placeholder {
     @Override
     public @NotNull String parse(@NotNull String text) {
         // 特殊变量替换
-        for (String string : placeholderMap.keySet()) {
-            Pattern pattern = Pattern.compile(string);
-            Matcher matcher = pattern.matcher(text);
-            while (matcher.find()) {
-                String get = placeholderMap.get(string).get();
-                text = text.replaceFirst(
-                        string,
-                        get
-                );
-            }
-        }
+        text = placeholder(text);
 
         Pattern pattern = Pattern.compile("\\$\\(mcp\\.([^)]+)\\)");
         Matcher matcher = pattern.matcher(text);
@@ -78,6 +68,7 @@ public class PlaceholderManager implements Placeholder {
         Matcher matcher = pattern.matcher(json.toString());
         if (matcher.find()) {
             String jsonString = json.toString();
+            jsonString = placeholder(jsonString);
             {
                 String group0 = matcher.group(0);
                 String group1 = matcher.group(1);
@@ -109,5 +100,23 @@ public class PlaceholderManager implements Placeholder {
         } else {
             return json;
         }
+    }
+
+    /**
+     * 特殊变量替换
+     */
+    private @NotNull String placeholder(@NotNull String text) {
+        for (String string : placeholderMap.keySet()) {
+            Pattern var001 = Pattern.compile(string);
+            Matcher var002 = var001.matcher(text);
+            while (var002.find()) {
+                String get = placeholderMap.get(string).get();
+                text = text.replaceFirst(
+                        string,
+                        get
+                );
+            }
+        }
+        return text;
     }
 }
